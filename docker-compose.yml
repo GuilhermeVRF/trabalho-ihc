@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: champmanager-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: champmanager
+      POSTGRES_PASSWORD: champmanager
+      POSTGRES_DB: champmanager
+    ports:
+      - "5433:5432"
+    volumes:
+      - champmanager_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U champmanager -d champmanager"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  champmanager_postgres_data:

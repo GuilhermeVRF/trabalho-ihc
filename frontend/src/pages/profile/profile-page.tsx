@@ -1,0 +1,16 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { KeyRound, Mail, Save, UserRound } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { useAuth } from '@/features/auth/use-auth'
+import { profileApi } from '@/features/profile/profile.api'
+import { profileSchema, type ProfileFormData } from '@/features/profile/profile.schema'
+import { FormField } from '@/shared/components/form-field'
+
+export function ProfilePage() {
+  const { user } = useAuth(); const queryClient = useQueryClient()
+  const { register, handleSubmit, reset, setError, formState: { errors } } = useForm<ProfileFormData>({ resolver: zodResolver(profileSchema), defaultValues: { name: user?.name ?? '', email: user?.email ?? '', password: '' } })
+  const mutation = useMutation({ mutationFn: profileApi.update, onSuccess: (updated) => { queryClient.setQueryData(['auth', 'me'], updated); reset({ name: updated.name, email: updated.email, password: '' }) }, onError: () => setError('root', { message: 'Ocorreu um erro.' }) })
+  const save = handleSubmit((data) => mutation.mutate({ name: data.name, email: data.email, ...(data.password && { password: data.password }) }))
+  return <><header><h1 className="text-2xl font-bold sm:text-3xl">Perfil</h1><p className="mt-2 text-sm text-slate-400">Atualize seus dados pessoais e sua senha.</p></header><div className="mt-7 max-w-2xl"><section className="mb-5 flex items-center gap-4 rounded-2xl border bg-white p-5 shadow-sm dark:bg-slate-900"><span className="grid size-14 place-items-center rounded-full bg-brand-100 text-xl font-bold text-brand-800 dark:bg-brand-950 dark:text-brand-300">{user?.name.charAt(0).toUpperCase()}</span><div className="min-w-0"><p className="truncate font-bold">{user?.name}</p><p className="mt-1 truncate text-sm text-slate-400">{user?.email}</p></div></section><form onSubmit={save} noValidate className="rounded-2xl border bg-white p-5 shadow-sm sm:p-7 dark:bg-slate-900"><div className="space-y-5"><div className="flex items-center gap-2 text-sm font-bold"><UserRound size={18} className="text-brand-600" />Dados pessoais</div><FormField id="profile-name" label="Nome" autoComplete="name" error={errors.name?.message} {...register('name')} /><div className="relative"><Mail className="pointer-events-none absolute top-11 right-4 text-slate-300" size={17} /><FormField id="profile-email" label="E-mail" type="email" autoComplete="email" error={errors.email?.message} {...register('email')} /></div><div className="border-t pt-5"><div className="mb-4 flex items-center gap-2 text-sm font-bold"><KeyRound size={18} className="text-brand-600" />Alterar senha</div><FormField id="profile-password" label="Nova senha" type="password" autoComplete="new-password" placeholder="Deixe em branco para manter" error={errors.password?.message} {...register('password')} /></div>{errors.root && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300">{errors.root.message}</p>}<button disabled={mutation.isPending} className="flex h-11 items-center gap-2 rounded-xl bg-brand-600 px-5 text-sm font-semibold text-white disabled:opacity-60"><Save size={17} />{mutation.isPending ? 'Salvando...' : 'Salvar'}</button></div></form></div></>
+}
